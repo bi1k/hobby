@@ -74,13 +74,18 @@ def main(banner,delim,snip,web):
                 if len(ad_list) > 1:
                     last_change = time_now
                     colour_count = 40
+            if colour_count != 40:
+                VAR_COLOUR = RESET
+            else:
+                VAR_COLOUR = YELLOW
+            print("Time of last query: " + VAR_COLOUR + time_now + RESET)
             if colour_count > 25:
                 VAR_COLOUR = YELLOW
             elif colour_count > 0:
                 VAR_COLOUR = BLUE
             else:
                 VAR_COLOUR = RESET
-            print("Time of last query: " + time_now + "\nNew listing detected: " + VAR_COLOUR + last_change + RESET + "\n\nCtrl + C to exit program.\n")
+            print("New listing detected: " + VAR_COLOUR + last_change + RESET + "\n\nCtrl + C to exit program.\n")
             if last_change == time_now and len(ad_list) > 1:
                 beep(web)
             if len(ad_list) > 20:
