@@ -1,0 +1,1970 @@
+# Final Coding Assignment (2021 Semester 2)
+# Nicholas Dean - 366157069
+
+# the program is used to administer a record management system for a veterinarian hospital.
+# it uses a menu system to allow navigation around the program allowing the user to enter numbers to select
+# what functions they would like to perform. The program uses 5 classes comprising of 1 parent class,
+# 3 child classes, and 1 standalone class. Each contain private variables and functions that are specific to the class
+# type. A number of functions have also been created to handle input validation to ensure data is kept clean
+# and errors do not disrupt the program.
+
+# UPDATE - minor changes to the UI with minor bug fixes to some class-specific functions.
+
+import os, sys
+
+# menu function facilitates user navigation around program. It collects a list of items and displays them with numbers.
+# the user can then input a number that corresponds to the list and a value is returned.
+# arguments passed to the menu function:
+# - title - for the title of the menu that is being displayed
+# - message - a message that asks the user what they would like to do depending on the list presented
+# - passed_list - the options that will be numbered and displayed to the user
+# - exit - which character to enter to go back up a menu or to exit the program. Default is "B" for back.
+def menu(title, message, passed_list, x_exit="B"):
+    while 1 == 1:
+        print("{} - {} Enter the corresponding number.\n".format(title, message))
+        choices = 0
+        # Populate list with numbers and print them.
+        for option in passed_list:
+            choices += 1
+            print("{}. {}".format(choices, option))
+        if x_exit == "B":
+            print("---------------------\nEnter '{}' to go back".format(x_exit))
+        else:
+            print("---------------------\nEnter '{}' to exit".format(x_exit))
+        choice = input("\n")
+        # if number equals 0 then return an error. This is important as "0" is treated as an exit code in the
+        # next section.
+        if choice == "0":
+            print("\nInvalid selection. Please try again.")
+            continue
+        # if "e" or "b" is entered, treat it as an exit code.
+        if (choice.upper() == "E" and x_exit == "E") or (choice.upper() == "B" and x_exit == "B"):
+            choice = 0
+        # if something other than an integer is entered or the integer entered isn't in the range of the list
+        # provided, throw an error.
+        try:
+            choice = int(choice)
+            if choice >= 0 and choice <= len(passed_list):
+                return choice
+            else:
+                print("\nInvalid selection. Please try again.")
+        except:
+            print("\nInvalid selection. Please try again.")
+
+
+def list_of_names(chosen_list, class_type):
+    names = []
+    # get titles and names from chosen class object type to display in menu
+    if class_type != 4:
+        for object in chosen_list:
+            names.append(object.get_title() + " " + object.get_fullname())
+    else:
+        for object in chosen_list:
+            names.append(object.get_animal_name() + " the " + object.get_animal_type())
+    return names
+
+
+# linear search conducted on inputted list. This was built for vets but could technically be used for nurses as well.
+# "x_sorted" is used to determine whether a sorted or unsorted linear search is conducted. x_sorted = y = sorted search.
+# search allows for multiple results to be picked up i.e., two records with the same salary.
+def search_linear(x_list, x_search, x_sorted='n'):
+    # found determines whether true or false is returned. found +1 means a result has been found
+    found = 0
+    # tmp_x_list used to store sorted list without permanently affecting the input list.
+    tmp_x_list = []
+    if x_sorted == "y":
+        for q in x_list:
+            tmp_x_list.append(q)
+        sort_bubble(tmp_x_list)
+    else:
+        tmp_x_list = x_list
+    print("\nSearch in progress...\n|")
+
+    for i in range(0, len(tmp_x_list)):
+        # if x_search matches salary, found += 1 and continue searching for more matching salaries.
+        if x_search == tmp_x_list[i].get_salary():
+            print("|->  {}: ${}".format(tmp_x_list[i].get_fullname(), tmp_x_list[i].get_salary()))
+            found += 1
+        # only in the scenario that a sorted list is used, if the current salary in the list is greater than the
+        # salary being searched for, end the search. Else keep searching
+        elif x_sorted == "y" and tmp_x_list[i].get_salary() > x_search:
+            print("|    {}: ${}\nV\n".format(tmp_x_list[i].get_fullname(), tmp_x_list[i].get_salary()))
+            if found > 0:
+                return True
+            else:
+                return False
+        else:
+            print("|    {}: ${}".format(tmp_x_list[i].get_fullname(), tmp_x_list[i].get_salary()))
+    print("V\n")
+    if found > 0:
+        return True
+    else:
+        return False
+
+
+# binary search conducted on inputted list. This was built for vets but could technically be used for nurses as well.
+# search allows for multiple results to be picked up i.e., two records with the same salary.
+def search_binary(x_list, x_search):
+    low = 0
+    high = len(x_list) - 1
+    # tmp_x_list used to store sorted list without permanently affecting the input list.
+    tmp_x_list = []
+    for q in x_list:
+        tmp_x_list.append(q)
+    sort_bubble(tmp_x_list)
+    print("\nSearch in progress...\n|")
+    # until search reaches a binary tree leaf node, continue searching.
+    while low <= high:
+        # get parent node
+        middle = (low + high) // 2
+        # if search = parent node, check adjacent indices in case different records have the same salary.
+        if tmp_x_list[middle].get_salary() == x_search:
+            print("|->  {}: ${}".format(tmp_x_list[middle].get_fullname(), tmp_x_list[middle].get_salary()))
+            middle_up = 1
+            middle_down = 1
+            finish_searching = 0
+            while finish_searching == 0:
+                # check indices up from the parent node
+                if middle + middle_up < len(tmp_x_list) and tmp_x_list[middle + middle_up].get_salary() == x_search:
+                    print("|->  {}: ${}".format(tmp_x_list[middle + middle_up].get_fullname(),
+                                                tmp_x_list[middle + middle_up].get_salary()))
+                    finish_searching = 0
+                    middle_up += 1
+                else:
+                    finish_searching = 1
+                # check indices down from the parent node
+                if middle - middle_down >= 0 and tmp_x_list[middle - middle_down].get_salary() == x_search:
+                    print("|->  {}: ${}".format(tmp_x_list[middle - middle_down].get_fullname(),
+                                                tmp_x_list[middle - middle_down].get_salary()))
+                    middle_down += 2
+                    finish_searching = 0
+            print("V\n")
+            # if no adjacent indices match the search term, finish searching.
+            return True
+        # if search less than value of parent node, move to left child
+        elif x_search < tmp_x_list[middle].get_salary():
+            high = middle - 1
+            print("|    {}: ${}".format(tmp_x_list[middle].get_fullname(), tmp_x_list[middle].get_salary()))
+        # else search more than value of parent node, move to right child
+        else:
+            low = middle + 1
+            print("|    {}: ${}".format(tmp_x_list[middle].get_fullname(), tmp_x_list[middle].get_salary()))
+    print("V\n")
+    return False
+
+
+# sort inputted list with the insertion sort algorithm.
+# this was built for vets but could technically be used for nurses as well.
+# demo variable 'y' used to display the sorting process.
+def sort_insertion(x_list, demo='n'):
+    if demo == 'y':
+        print("Sorting in progress...\n\nIteration #1\n         - {}: ${}\n".format(x_list[0].get_fullname(),
+                                                                                    x_list[0].get_salary()))
+    # for each element except for the first one, compare it with previous elements. If the element is less than
+    # previous elements, move it down the array until it's in the right position.
+    for i in range(1, len(x_list)):
+        current_position = i
+        current_value = x_list[i]
+
+        while (current_position > 0) and (x_list[current_position - 1].get_salary() > current_value.get_salary()):
+            x_list[current_position] = x_list[current_position - 1]
+            current_position = current_position - 1
+            x_list[current_position] = current_value
+        if demo == 'y':
+            print("Iteration #{}".format(i + 1))
+            for j in range(0, i + 1):
+                if current_position == j and i != j:
+                    icon = "INSERTED >"
+                else:
+                    icon = "         -"
+                print("{} {}: ${}".format(icon, x_list[j].get_fullname(), x_list[j].get_salary()))
+            print()
+    return x_list
+
+
+# sort inputted list with the selection sort algorithm.
+# this was built for vets but could technically be used for nurses as well.
+# demo variable 'y' used to display the sorting process.
+def sort_selection(x_list, demo='n'):
+    if demo == 'y':
+        print("Sorting in progress...\n")
+    # for each element in the array, check elements with higher indices. If any higher indexed element is smaller than
+    # the current element, swap values and move onto the next For loop iteration.
+    for i in range(len(x_list)):
+        min_i = i
+        for j in range(i + 1, len(x_list)):
+            if x_list[min_i].get_salary() > x_list[j].get_salary():
+                min_i = j
+        x_list[i], x_list[min_i] = x_list[min_i], x_list[i]
+        if demo == 'y':
+            print("Iteration #{}".format(i + 1))
+            check_icon = "n"
+            for k in range(0, len(x_list)):
+                if check_icon == "n":
+                    if i != min_i:
+                        if k == min_i or k == i:
+                            icon = " SWAPPED > "
+                        elif k < min_i and k > i:
+                            icon = "    |    - "
+                        else:
+                            icon = "         - "
+                    elif i == k:
+                        icon = " CHECKED > "
+                        check_icon = "y"
+                    else:
+                        icon = "         - "
+                elif k == len(x_list) - 1:
+                    icon = "    V    - "
+                else:
+                    icon = "    |    - "
+                print("{} {}: ${}".format(icon, x_list[k].get_fullname(), x_list[k].get_salary()))
+            print()
+    return x_list
+
+
+# sort inputted list with the bubble sort algorithm.
+# this was built for vets but could technically be used for nurses as well.
+# demo variable 'y' used to display the sorting process.
+def sort_bubble(x_list, demo='n'):
+    if demo == 'y':
+        print("Sorting in progress...\n")
+    # iterate through the array and compare the current element with the one above. If the one above has a smaller
+    # value, swap the elements. Continue to iterate over the array multiple times until the array sorted.
+    # The sort has been coded so that if an iteration doesn't experience a change, the sort can finish (as opposed to
+    # working through the For loop ranges until they are finished).
+    for i in range(0, len(x_list)):
+        bubbling = []
+        bubbled = []
+        pop = "y"
+        for j in range(0, len(x_list) - 1):
+            if x_list[j].get_salary() > x_list[j + 1].get_salary():
+                x_list[j], x_list[j + 1] = x_list[j + 1], x_list[j]
+                bubbling.append(j)
+                pop = "n"
+            elif pop == "n":
+                bubbled.append(j)
+                pop = "y"
+
+        # this section is just to illustrate the bubbling process.
+        if demo == 'y':
+            print("Iteration #{}".format(i + 1))
+            for k in range(0, len(x_list)):
+                if k in bubbled or (k == len(x_list) - 1 and len(x_list) - 2 in bubbling):
+                    icon = " BUBBLED >"
+                elif k in bubbling:
+                    icon = " ::::::: -"
+                else:
+                    icon = "         -"
+                print("{} {}: ${}".format(icon, x_list[k].get_fullname(), x_list[k].get_salary()))
+            print()
+        if len(bubbled) == 0:
+            break
+    return x_list
+
+
+# used by heap sort function.
+# works on a subtree to ensure the parent node has the highest value and the children nodes are lower.
+# if left or right nodes are higher, swap with the parent node.
+def heapify(x_list, index, x_max, demo):
+    parent = index
+    left = 2 * index + 1
+    right = 2 * index + 2
+
+    tree_part = "\nParent: ${} [Index: {}]\nChildren: ".format(x_list[parent].get_salary(), parent)
+
+    if left < x_max and x_list[index].get_salary() < x_list[left].get_salary():
+        parent = left
+    if right < x_max and x_list[parent].get_salary() < x_list[right].get_salary():
+        parent = right
+
+    if left < x_max:
+        tree_part += "${} [Index: {}]".format(x_list[left].get_salary(), left)
+    if right < x_max:
+        if left < x_max:
+            tree_part += ", "
+        tree_part += "${} [Index: {}]".format(x_list[right].get_salary(), right)
+
+    if (left < x_max or right < x_max) and demo == 'y':
+        print(tree_part)
+
+    if parent != index:
+        if demo == 'y':
+            print("Swapping index {} with index {}".format(parent, index))
+        x_list[index], x_list[parent] = x_list[parent], x_list[index]
+        # if a swap occurred, repeat the heapify process for the node that was made a child and use it as the parent
+        heapify(x_list, parent, x_max, demo)
+
+
+# sort inputted list with the heap sort algorithm.
+# this was built for vets but could technically be used for nurses as well.
+# demo variable 'y' used to display the sorting process.
+# see print messages for what the heap sort is doing.
+def sort_heap(x_list, demo='n'):
+    if demo == 'y':
+        print("Sorting in progress...\nBuilding max heap...")
+    list_len = len(x_list)
+
+    for index in range(list_len // 2, -1, -1):
+        heapify(x_list, index, list_len, demo)
+
+    if demo == 'y':
+        print("\nSwapping root node with the last node and deleting."
+              "\nRebuilding max heap and repeating swap and delete until no nodes are left...")
+    for index in range(list_len - 1, 0, -1):
+        x_list[index], x_list[0] = x_list[0], x_list[index]
+        heapify(x_list, 0, index, demo)
+    print()
+    return x_list
+
+
+# function used to display the results of the vet sort functions.
+def sort_before_after(b_list, a_list):
+    print("{:^20}{:^57}".format("Before", "After"))
+    for i in range(0, len(a_list)):
+        print("${:<12} {:<25}${:<12} {:<25}".format(b_list[i].get_salary(), b_list[i].get_fullname(),
+                                                    a_list[i].get_salary(), a_list[i].get_fullname()))
+    print()
+
+
+# function used to read a data file and import records into the program.
+def read_file(file_name):
+    v = []  # vets
+    n = []  # nurses
+    o = []  # owners
+    p = []  # pets
+    vno = []  # people
+    changes = []  # records that were changed in the last save
+    try:
+        with open(file_name, 'r') as data_import:
+            for extract_line in data_import.readlines():
+                try:
+                    # Characters before the record indicate what kind of record it is.
+                    # > = change from last save
+                    # V = vet record
+                    # N = nurse record
+                    # O = owner record
+                    # P = pet record
+                    # if a line doesn't contain a known character at a start, a warning will be displayed to the user
+                    # saying the record wasn't included.
+                    if extract_line[0:2] == "> ":
+                        changes.append(extract_line[2:-1])
+                    else:
+                        f = extract_line[2:].rstrip("\n").split(", ")
+                        if extract_line[0:2].upper() == "V ":
+                            v.append(veterinarian(f[0], f[1], f[2], f[3], float(f[4]), f[5]))
+                        elif extract_line[0:2].upper() == "N ":
+                            n.append(nurse(f[0], f[1], f[2], f[3], float(f[4]), f[5], int(f[6])))
+                        elif extract_line[0:2].upper() == "O ":
+                            o.append(owner(f[0], f[1], f[2], f[3], f[4], f[5], f[6]))
+                        elif extract_line[0:2].upper() == "P ":
+                            p.append(animal(f[0], f[1], f[2], int(f[3])))
+                        # elif captures whether a known character wasn't present at the start of the record line.
+                        elif extract_line != "\n":
+                            print("! - Warning: The following data entry was not loaded properly: {}"
+                                  .format(extract_line).rstrip("\n"))
+                # except captures whether a known character was present at the start of the record line but the record
+                # entry itself contained errors.
+                except:
+                    print("! - Warning: The following data entry was not loaded properly: {}"
+                          .format(extract_line).rstrip("\n"))
+    # except captures if the file was not found or there was an issue opening it.
+    except:
+        print("Either the data file wasn't found or an issue occurred loading in the data. "
+              "New data will be saved to {}".format(file_name))
+    for V in v:
+        vno.append(V)
+    for N in n:
+        vno.append(N)
+    for O in o:
+        vno.append(O)
+    return v, n, o, p, vno, changes
+
+
+# function saves changes to the data file
+def write_file(file_name, v, n, o, p, ch_people, ch_pets):
+    # try writing all the vet, nurse, owner and pet records to the file. Then try writing all the latest changes
+    # that occurred to the bottom of the file.
+    try:
+        with open(file_name, 'w') as data_export:
+            for l in v:
+                data_export.write('v {}, {}, {}, {}, {}, {}\n'.format(l.get_title(), l.get_fname(), l.get_lname(),
+                                                                      l.get_job_title(), l.get_salary(),
+                                                                      l.get_qual()))
+            for l in n:
+                data_export.write('n {}, {}, {}, {}, {}, {}, {}\n'.format(l.get_title(), l.get_fname(),
+                                                                          l.get_lname(), l.get_job_title(),
+                                                                          l.get_salary(), l.get_ward(),
+                                                                          l.get_days_per_week()))
+            for l in o:
+                data_export.write('o {}, {}, {}, {}, {}, {}, {}\n'.format(l.get_title(), l.get_fname(),
+                                                                          l.get_lname(),
+                                                                          l.get_insurance_co(),
+                                                                          l.get_insurance_no(),
+                                                                          l.get_phone(), l.get_email()))
+            for l in p:
+                data_export.write('p {}, {}, {}, {}\n'.format(l.get_animal_name(), l.get_animal_type(),
+                                                              l.get_animal_breed(), l.get_owner_id()))
+            print()
+            for l in ch_people:
+                data_export.write('> {}\n'.format(l.replace("\n", ", ")))
+            for l in ch_pets:
+                data_export.write('> {}\n'.format(l.replace("\n", ", ")))
+        print("Changes saved!")
+    except:
+        print("There was an issue saving the file. Changes may not have been captured.")
+
+
+# function used to confirm whether a change should be committed when adding, updating or deleting records.
+def confirm_change(x_object, index, action, x_list):
+    yn = ""
+    # the user needs to enter either y or n to either confirm change of a record or abort the action.
+    while yn.lower() != 'n' and yn.lower() != 'y':
+        if x_object != 4:
+            yn = input(
+                "Commit this change? {} record: {}. Y/N: ".format(action, x_list[index].get_fullname()))
+        else:
+            yn = input(
+                "Commit this change? {} record: {}. Y/N: ".format(action, x_list[index].get_animal_name()))
+        if yn.lower() == 'y':
+            return True
+        elif yn.lower() == 'n':
+            return False
+        else:
+            print("\nInvalid selection. Please try again.")
+
+
+# parent class for veterinarians, nurses and owners
+class person:
+    def __init__(self, title="", first="", last=""):
+        self.__title = title.capitalize()
+        self.__firstname = first.capitalize()
+        self.__surname = last.capitalize()
+
+    # getters
+    def get_title(self):
+        return self.__title
+
+    def get_fname(self):
+        return self.__firstname
+
+    def get_lname(self):
+        return self.__surname
+
+    def get_fullname(self):
+        return "{} {}".format(self.__firstname, self.__surname)
+
+    # input_validate_string used by setters to ensure input is a string and is valid.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    # - spaces - determines whether a string passed to the function can have spaces. By default, no spaces are allowed.
+    def input_validate_string(self, attribute, action, spaces="n"):
+        while 1 == 1:
+            if action == "add":
+                new_attribute = input("Enter the new {}. ".format(attribute))
+            else:
+                new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_fullname()))
+            if len(new_attribute.replace(" ", "")) == 0:
+                print("No input provided. Please try again.")
+            # if no spaces are allowed and the whole string isn't fully made up of alpha characters, through an error
+            elif spaces == "n" and not new_attribute.isalpha():
+                print("{} entered is invalid. Please try again.\n".format(attribute.capitalize()))
+            # if spaces are allowed and the string contains characters other than alpha characters, through an error
+            elif not new_attribute.replace(" ", "").isalpha():
+                print("{} entered is invalid. Please try again.\n".format(attribute.capitalize()))
+            else:
+                # if spaces are allowed, strip any spaces on either side of the string entered.
+                while new_attribute[0] == " ":
+                    new_attribute = new_attribute.lstrip(" ")
+                while new_attribute[-1] == " ":
+                    new_attribute = new_attribute.rstrip(" ")
+                return new_attribute.capitalize()
+
+    # input_validate_dollar used by setters to ensure input is suitable for a dollar value.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_dollar(self, attribute, action):
+        new_attribute = ""
+        while 1 == 1:
+            try:
+                if action == "add":
+                    new_attribute = float(input("Enter the new {}. ".format(attribute)))
+                else:
+                    new_attribute = float(input("Enter a new {} for {}. ".format(attribute, self.get_fullname())))
+            except:
+                pass
+            # if not in a float format or less than 0 is entered, through an error.
+            if not isinstance(new_attribute, float) or new_attribute < 0:
+                print("{} entered is invalid. Please try again.".format(attribute.capitalize()))
+            else:
+                return round(new_attribute, 2)
+
+    # input_validate_number used by setters to ensure input is a number and is valid.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_number(self, attribute, action):
+        valid = 0
+        while valid == 0:
+            if action == "add":
+                new_attribute = input("Enter the new {}. ".format(attribute))
+            else:
+                new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_fullname()))
+            # if the input is anything other than numbers and its less than 1, throw an error.
+            if not new_attribute.isdigit() or int(new_attribute) < 1:
+                print("{} entered is invalid. Please try again.".format(attribute.capitalize()))
+            else:
+                return new_attribute
+
+    # input_validate_phone used by setters to ensure input resembles that of a phone number.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_phone(self, attribute, action):
+        valid = 0
+        while valid == 0:
+            if action == "add":
+                new_attribute = input("Enter the new {}. ".format(attribute))
+            else:
+                new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_fullname()))
+            if len(new_attribute.replace(" ", "")) == 0:
+                print("No input provided. Please try again.")
+            # if input equals anything other than numbers and spaces or if the length of the input is less than 8,
+            # throw an error.
+            elif not new_attribute.replace(" ", "").isdigit() or len(new_attribute.replace(" ", "")) < 8:
+                print("{} entered is invalid. Please try again.".format(attribute.capitalize()))
+            else:
+                # strip any spaces on either side of the string entered.
+                while new_attribute[0] == " ":
+                    new_attribute = new_attribute.lstrip(" ")
+                while new_attribute[-1] == " ":
+                    new_attribute = new_attribute.rstrip(" ")
+                return new_attribute
+
+    # input_validate_email used by setters to ensure input resembles that of an email address.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_email(self, attribute, action):
+        valid = 0
+        while valid == 0:
+            if action == "add":
+                new_attribute = input("Enter the new {}. ".format(attribute))
+            else:
+                new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_fullname()))
+            count_at = 0
+            # count the number of @ symbols in the input.
+            for x in new_attribute:
+                if x == "@":
+                    count_at += 1
+            # if there isn't only 1 @ symbol in the input, throw an error.
+            if count_at != 1 or " " in new_attribute:
+                print("{} entered is invalid. Please try again.".format(attribute.capitalize()))
+            else:
+                try:
+                    # check and see whether there is at least 2 characters on either side of the @ symbol. If there
+                    # isn't, throw an error.
+                    split_email = new_attribute.split("@")
+                    for part in split_email:
+                        if len(part) < 2:
+                            1 / 0
+                    return new_attribute
+                except:
+                    print("{} entered is invalid. Please try again.".format(attribute.capitalize()))
+
+    # setters (the revert action is used when a change isn't committed and the value needs to be reverted back to its original state)
+    def set_title(self, action, value=""):
+        if action == "revert":
+            self.__title = value
+        else:
+            self.__title = self.input_validate_string("title", action)
+
+    def set_fname(self, action, value=""):
+        if action == "revert":
+            self.__firstname = value
+        else:
+            self.__firstname = self.input_validate_string("first name", action)
+
+    def set_lname(self, action, value=""):
+        if action == "revert":
+            self.__surname = value
+        else:
+            self.__surname = self.input_validate_string("surname", action)
+
+    # check a record to see whether there are any other records in the people list that match this.
+    def check_for_duplicate(self):
+        dup_full = []
+        dup_first = []
+        dup_last = []
+        # if any other objects with the same full name exist, put in the "dup_full" list.
+        for p in people:
+            if p.get_fullname() == self.get_fullname():
+                if p != self:
+                    dup_full.append(p)
+        # if any duplicates were found, list them here. Else check whether there are any matching first names.
+        if len(dup_full) > 0:
+            print("Similar full name(s) detected. See possible duplicate record(s) below:\n")
+            for dup in dup_full:
+                print(str(dup) + "\n")
+        else:
+            for p in people:
+                if p.get_fname() == self.get_fname():
+                    if p != self:
+                        dup_first.append(p)
+            # if any first names were found, list them here. Else check whether there are any matching surnames.
+            if len(dup_first) > 0:
+                print("Similar first name(s) detected. See possible duplicate record(s) below:\n")
+                for dup in dup_first:
+                    print(str(dup) + "\n")
+            else:
+                for p in people:
+                    if p.get_lname() == self.get_lname():
+                        if p != self:
+                            dup_last.append(p)
+                # if any surnames were found, list them here. Else present an alternative message.
+                if len(dup_last) > 0:
+                    print("Similar surname(s) detected. See possible duplicate record(s) below:\n")
+                    for dup in dup_last:
+                        print(str(dup) + "\n")
+                else:
+                    print("No duplicates for this record detected.\n")
+        input("Press enter to continue.\n")
+
+    # generates a fictional system id for future usage at the vet hospital.
+    def generate_sysid(self):
+        # try generating an id. If something fails, produce an error.
+        # id's use the format first initial of first name + surname + object's index in the "people" list + 1.
+        try:
+            print("{}'s system id will be: {}{}{}".format(
+                self.get_fullname(), self.get_fname()[0].lower(), self.get_lname().lower(),
+                str(people.index(self) + 1)))
+        except:
+            print("An error has occurred. The person may not exist in the 'people' list.")
+        input("\nPress enter to continue.\n")
+
+    def __str__(self):
+        return "Title: {}\nFirst name: {}\nSurname: {}\n".format(
+            self.get_title(), self.get_fname(), self.get_lname())
+
+
+# child class of person
+class veterinarian(person):
+    def __init__(self, title="", first="", last="", special="", salary=0.0, qual=""):
+        super().__init__(title, first, last)
+        self.__job_title = special.capitalize()
+        self.__base_salary = round(salary, 2)
+        self.__qualification = qual.capitalize()
+
+    # getters
+    def get_job_title(self):
+        return self.__job_title
+
+    def get_salary(self):
+        return self.__base_salary
+
+    def get_qual(self):
+        return self.__qualification
+
+    # setters (the revert action is used when a change isn't committed and the value needs to be reverted back to its original state)
+    def set_job_title(self, action, value=""):
+        if action == "revert":
+            self.__job_title = value
+        else:
+            self.__job_title = self.input_validate_string("job title", action, "y")
+
+    def set_salary(self, action, value=""):
+        if action == "revert":
+            self.__base_salary = value
+        else:
+            self.__base_salary = self.input_validate_dollar("base salary", action)
+
+    def set_qual(self, action, value=""):
+        if action == "revert":
+            self.__qualification = value
+        else:
+            self.__qualification = self.input_validate_string("qualification", action, "y")
+
+    # get pay grade and see what other employees are in the same grade
+    def pay_grade(self):
+        same_grade = []
+        grade_count = 0
+        # determine which pay grade a vet's salary falls under. Once done, store in employee_grade
+        for grade in pay_grades:
+            if self.get_salary() >= grade:
+                employee_grade = grade_count
+                break
+            else:
+                grade_count += 1
+        grade_count = 0
+        # if any vets or nurses fall into the same pay grade as the current vet, store their object in "same_grade".
+        # note the vet that this function was originally run against should not be put in "same_grade".
+        employees = []
+        for v in vets:
+            employees.append(v)
+        for n in nurses:
+            employees.append(n)
+        for employee in employees:
+            grade_count = 0
+            for grade in pay_grades:
+                if employee.get_salary() >= grade and employee.get_fullname() != self.get_fullname():
+                    if grade_count == employee_grade:
+                        same_grade.append(employee)
+                        break
+                else:
+                    grade_count += 1
+        print(
+            "{} is at pay grade {}. Their current base salary is ${}.".format(self.get_fullname(), str(employee_grade),
+                                                                              str(self.get_salary())))
+        # if there are employees in the same pay grade, list them. Otherwise, return a different message.
+        if len(same_grade) > 0:
+            print("Other employees in the same pay grade are listed below:\n")
+            for employee in same_grade:
+                print("- {} ({}) - ${}".format(employee.get_fullname(), employee.get_job_title(),
+                                               str(employee.get_salary())))
+        else:
+            print("No other employees are in the same pay grade.")
+        input("\nPress enter to continue.\n")
+
+    # shows where the current vet is ranked on the pay ladder
+    def pay_comparison(self):
+        sorted_list = []
+        # store all vets names, salaries and job titles in to "sorted_list"
+        for vet in vets:
+            sorted_list.append([vet.get_fullname(), vet.get_salary(), vet.get_job_title()])
+        # sort "sorted_list". lambda used to sort by 2nd item in each element (in descending order).
+        sorted_list.sort(key=lambda x: x[1], reverse=True)
+        choices = 0
+        index = 0
+        print("See comparisons below:\n")
+        for vet in sorted_list:
+            # when listing the current vet, put an arrow next to their name. Else just list the other vets as normal.
+            if sorted_list[index][0] == self.get_fullname():
+                print("${} - {} ({}) <---------------------------".format(sorted_list[index][1], sorted_list[index][0],
+                                                                          sorted_list[index][2]))
+            else:
+                print("${} - {} ({})".format(sorted_list[index][1], sorted_list[index][0], sorted_list[index][2]))
+            index += 1
+        input("\nPress enter to continue.\n")
+
+    def __str__(self):
+        str = super().__str__()
+        return str + "Job title: {}\nSalary: ${}\nQualification: {}".format(
+            self.get_job_title(), self.get_salary(), self.get_qual())
+
+
+# child class of person
+class nurse(person):
+    def __init__(self, title="", first="", last="", employtype="", salary=0.0, ward="", dayspw=5):
+        person.__init__(self, title, first, last)
+        self.__job_title = employtype
+        self.__base_salary = salary
+        self.__ward = ward
+        self.__days_per_week = dayspw
+
+    # getters
+    def get_job_title(self):
+        return self.__job_title
+
+    def get_salary(self):
+        return self.__base_salary
+
+    def get_ward(self):
+        return self.__ward
+
+    def get_days_per_week(self):
+        return self.__days_per_week
+
+    # input_validate_ward used by the ward setter to ensure input matches the ward format.
+    # arguments passed to the function:
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_ward(self, action):
+        while 1 == 1:
+            if action == "add":
+                new_attribute = input("Enter the new ward. ")
+            else:
+                new_attribute = input("Enter a new ward for {}. ".format(self.get_fullname()))
+            if len(new_attribute) == 0:
+                print("No input provided. Please try again.")
+            elif len(new_attribute) == 1:
+                print("Input too short. Please try again.")
+            # if the first character isn't an alpha character or the remaining characters aren't digits or the
+            # input is greater than 3, throw an error.
+            elif not new_attribute[0].isalpha() or not new_attribute[1:].isdigit() or len(new_attribute) > 3:
+                print("Ward entered is invalid. Format example: 'B13'. Please try again.")
+            else:
+                return new_attribute.upper()
+
+    # input_validate_days used by the days_per_week setter to ensure input is a number between and including 1-5.
+    # arguments passed to the function:
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    def input_validate_days(self, action):
+        while 1 == 1:
+            if action == "add":
+                new_attribute = input("Enter the number of days per week they will be working. ").upper()
+            else:
+                new_attribute = input(
+                    "Enter the number of days per week {} will be working. ".format(self.get_fullname())).upper()
+            try:
+                if int(new_attribute) in range(1, 6):
+                    return int(new_attribute)
+                else:
+                    print("Please enter a number between and including 1-5 and try again.")
+            except:
+                print(
+                    "Days per week entered is invalid. Please enter a number between and including 1-5 and try again.")
+
+    # setters (the revert action is used when a change isn't committed and the value needs to be reverted back to its original state)
+    def set_job_title(self, action, value=""):
+        if action == "revert":
+            self.__job_title = value
+        else:
+            self.__job_title = self.input_validate_string("job title", action, "y")
+
+    def set_salary(self, action, value=""):
+        if action == "revert":
+            self.__base_salary = value
+        else:
+            self.__base_salary = self.input_validate_dollar("base salary", action)
+
+    def set_ward(self, action, value=""):
+        if action == "revert":
+            self.__ward = value
+        else:
+            self.__ward = self.input_validate_ward(action)
+
+    def set_days_per_week(self, action, value=""):
+        if action == "revert":
+            self.__days_per_week = value
+        else:
+            self.__days_per_week = self.input_validate_days(action)
+
+    # get pay grade and see what other employees are in the same grade
+    def pay_grade(self):
+        same_grade = []
+        grade_count = 0
+        # determine which pay grade a vet's salary falls under. Once done, store in employee_grade
+        for grade in pay_grades:
+            if self.get_salary() >= grade:
+                employee_grade = grade_count
+                break
+            else:
+                grade_count += 1
+        grade_count = 0
+        # if any vets or nurses fall into the same pay grade as the current vet, store their object in "same_grade".
+        # note the vet that this function was originally run against should not be put in "same_grade".
+        employees = []
+        for v in vets:
+            employees.append(v)
+        for n in nurses:
+            employees.append(n)
+        for employee in employees:
+            grade_count = 0
+            for grade in pay_grades:
+                if employee.get_salary() >= grade and employee.get_fullname() != self.get_fullname():
+                    if grade_count == employee_grade:
+                        same_grade.append(employee)
+                        break
+                else:
+                    grade_count += 1
+        print(
+            "{} is at pay grade {}. Their current base salary is ${}.".format(self.get_fullname(), str(employee_grade),
+                                                                              str(self.get_salary())))
+        # if there are employees in the same pay grade, list them. Otherwise, return a different message.
+        if len(same_grade) > 0:
+            print("Other employees in the same pay grade are listed below:\n")
+            for employee in same_grade:
+                print("- {} ({}) - ${}".format(employee.get_fullname(), employee.get_job_title(),
+                                               str(employee.get_salary())))
+        else:
+            print("No other employees are in the same pay grade.")
+        input("\nPress enter to continue.\n")
+
+    # provide salary details include what their annual salary is after its adjusted according to employee type
+    # and hourly rate.
+    def pay_details(self):
+        # if days = 5, the nurse is working full time. Otherwise they are working part time.
+        if self.get_days_per_week() == 5:
+            employment_type = "Full Time"
+        else:
+            employment_type = "Part Time"
+        # determine annual salary after days per week are accounted for
+        pro_rata_salary = str(self.get_salary() * (self.get_days_per_week() / 5))
+        # work out hourly rate
+        hourly_rate = str(round(self.get_salary() / 52 / 38 * (self.get_days_per_week() / 5), 2))
+        print("{}'s pay details:\n\n"
+              "Employment type: {}\n"
+              "Annual base salary (Pro rata): ${}\n"
+              "Hourly rate: ${}"
+              .format(self.get_fullname(), employment_type, pro_rata_salary, hourly_rate))
+        input("\nPress enter to continue.\n")
+
+    def __str__(self):
+        str = super().__str__()
+        return str + "Job title: {}\nSalary: ${}\nWard: {}\nDays per week: {}".format(
+            self.get_job_title(), self.get_salary() * self.get_days_per_week() / 5, self.get_ward(),
+            self.get_days_per_week())
+
+
+# child class of person
+class owner(person):
+    def __init__(self, title="", first="", last="", insur="", member="", phone="", email=""):
+        person.__init__(self, title, first, last)
+        self.__insurance_company = insur.capitalize()
+        self.__insurance_memberno = member
+        self.__phone = phone
+        self.__email = email
+
+    # getters
+    def get_insurance_co(self):
+        return self.__insurance_company
+
+    def get_insurance_no(self):
+        return self.__insurance_memberno
+
+    def get_phone(self):
+        return self.__phone
+
+    def get_email(self):
+        return self.__email
+
+    # setters (the revert action is used when a change isn't committed and the value needs to be reverted back to its original state)
+    def set_insurance_co(self, action, value=""):
+        if action == "revert":
+            self.__insurance_company = value
+        else:
+            self.__insurance_company = self.input_validate_string("insurance company", action, "y")
+
+    def set_insurance_no(self, action, value=""):
+        if action == "revert":
+            self.__insurance_memberno = value
+        else:
+            self.__insurance_memberno = self.input_validate_number("insurance membership number", action)
+
+    def set_phone(self, action, value=""):
+        if action == "revert":
+            self.__phone = value
+        else:
+            self.__phone = self.input_validate_phone("phone number", action)
+
+    def set_email(self, action, value=""):
+        if action == "revert":
+            self.__email = value
+        else:
+            self.__email = self.input_validate_email("email address", action)
+
+    # returns a list of pets that belong to the owner.
+    # arguments passed to the function:
+    # - action - dictates the execution flow of the function. "delete" is used to clear an owner's index from a pet's
+    # "owner" field. "adjust" decrements a pet's "owner" value by 1 if a lesser owner id is cleared (this is to prevent
+    # pets from being reassigned a new owner because the owner indexes change). "find" returns a list of pets that the
+    # owner owns.
+    def find_pets(self, action):
+        found_pets = []
+        pet_owner_id_to_change = []
+        # get current owner index in owners
+        owner_index = int(owners.index(self))
+        for pet in pets:
+            # if a match is found between an owner and a pet, store the pet in "found_pets"
+            if pet.get_owner_id() == owner_index:
+                found_pets.append(pet)
+            # if a pet has an owner id that is greater than one that is about to get cleared, add to
+            # "pet_owner_id_to_change" list
+            if pet.get_owner_id() > owner_index:
+                pet_owner_id_to_change.append(pet)
+        # if delete action is used:
+        if action == "delete":
+            # reset any pet owner ids with that of the owner (This happens when an owner is deleted from the system).
+            for pet in found_pets:
+                pet.set_owner("delete")
+            # adjust any pet owner id if theirs is greater than the one that is getting deleted.
+            for pet in pet_owner_id_to_change:
+                pet.set_owner("adjust")
+        elif len(found_pets) > 0:
+            print("{} owns the following pets:".format(self.get_fullname()))
+            for pet in found_pets:
+                print("- {} the {}".format(pet.get_animal_name(), pet.get_animal_type()))
+            input("\nPress enter to continue.\n")
+        else:
+            print("No results found.")
+
+    # if an owner is using bupa, present a message saying that they are eligible for a discount.
+    def bupa_discount(self):
+        if "bupa" in self.get_insurance_co().lower():
+            print("{} is eligible for a 5% discount on vet medical bills!".format(self.get_fullname()))
+        else:
+            print("{} is not eligible for a discount.".format(self.get_fullname()))
+        input("\nPress enter to continue.\n")
+
+    def __str__(self):
+        str = super().__str__()
+        return str + "Insurance company name: {}\nInsurance membership number: {}\nPhone number: {}\nEmail address: {}".format(
+            self.get_insurance_co(), self.get_insurance_no(), self.get_phone(), self.get_email())
+
+
+# individual class for animal patients
+class animal:
+    def __init__(self, name="", animaltype="", breed="", owner=-1):
+        self.__name = name
+        self.__animaltype = animaltype
+        self.__breed = breed
+        self.__owner = owner
+
+    # getters
+    def get_animal_name(self):
+        return self.__name
+
+    def get_animal_type(self):
+        return self.__animaltype
+
+    def get_animal_breed(self):
+        return self.__breed
+
+    def get_owner_id(self):
+        return self.__owner
+
+    # if a pet's owner has been reset, return "No owner" message. Else if a pet's owner has an id higher than the
+    # owner range, return "Owner does not exist" message. Else display owner's name.
+    def get_owner_name(self):
+        if self.__owner == -1:
+            return "No owner"
+        elif self.__owner >= len(owners):
+            return "Owner does not exist"
+        else:
+            return owners[self.__owner].get_fullname()
+
+    # input_validate_string used by setters to ensure input is a string and is valid.
+    # arguments passed to the function:
+    # - attribute - the name of the field that is changing. Mainly used in the instructions provided to the user
+    # - action - dictates what is displayed in the function depending on what called it. The "add" action changes the
+    # function slightly to accommodate for when a new class object is being created.
+    # - spaces - determines whether a string passed to the function can have spaces. By default, no spaces are allowed.
+    def input_validate_string(self, attribute, action):
+        valid = 0
+        while valid == 0:
+            if action == "add":
+                new_attribute = input("Enter the new {}. ".format(attribute))
+            else:
+                try:
+                    new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_fullname()))
+                except:
+                    new_attribute = input("Enter a new {} for {}. ".format(attribute, self.get_animal_name()))
+            if len(new_attribute.replace(" ", "")) == 0:
+                print("No input provided. Please try again.")
+            elif not new_attribute.replace(" ", "").isalpha():
+                print("{} entered is invalid. Please try again.\n".format(attribute.capitalize()))
+            else:
+                while new_attribute[0] == " ":
+                    new_attribute = new_attribute.lstrip(" ")
+                while new_attribute[-1] == " ":
+                    new_attribute = new_attribute.rstrip(" ")
+                return new_attribute.capitalize()
+
+    def set_animal_name(self, action, value=""):
+        if action == "revert":
+            self.__name = value
+        else:
+            self.__name = self.input_validate_string("name", action)
+
+    def set_animal_type(self, action, value=""):
+        if action == "revert":
+            self.__animaltype = value
+        else:
+            self.__animaltype = self.input_validate_string("animal type", action)
+
+    def set_breed(self, action, value=""):
+        if action == "revert":
+            self.__breed = value
+        else:
+            self.__breed = self.input_validate_string("breed", action)
+
+    # sets pet's owner with their owner id (index).
+    # arguments passed to the function:
+    # - action - dictates the execution flow of the function. "delete" is used to reset the owner id field.
+    # "adjust" decrements the owner id field by one if another owner with a lower index has been deleted.
+    # "add"/"update" allows for a list of owners to be displayed so an owner index can be specified.
+    def set_owner(self, action, value=""):
+        new_attribute = 0
+        if action == "revert":
+            self.__owner = value
+        elif action == "delete":
+            self.__owner = -1
+        elif action == "adjust":
+            self.__owner = self.__owner - 1
+        elif len(owners) == 0:
+            self.__owner = -1
+        else:
+            while new_attribute < 1 or new_attribute > len(owners):
+                choices = 0
+                print("Which owner does {} belong to? Enter a corresponding number\n".format(self.get_animal_name()))
+                # Display list of owners
+                for o in owners:
+                    choices += 1
+                    print("{}. {}".format(choices, o.get_fullname()))
+                # if an integer isn't entered or the owner index doesn't exist, throw an error.
+                try:
+                    new_attribute = int(input())
+                except:
+                    print("\nInvalid selection. Please try again.")
+                    continue
+                if new_attribute < 1 or new_attribute > len(owners):
+                    print("\nInvalid selection. Please try again.")
+                else:
+                    self.__owner = new_attribute - 1
+
+    # checks to see what other animals of the same type are in the hospital.
+    def same_animal_type(self):
+        same_animals = []
+        # if an animal in the pets list is the same and isn't the current animal, add it to the "same_animals" list.
+        for pet in pets:
+            if pet.get_animal_type() == self.get_animal_type() and pet.get_animal_name() != self.get_animal_name():
+                same_animals.append(pet)
+        # display animals that are the same type else present a message.
+        if len(same_animals) != 0:
+            print("Other animals that are type '{}' on record include:".format(self.get_animal_type().lower()))
+            for animal in same_animals:
+                print("- {} the {}".format(animal.get_animal_name(), animal.get_animal_breed()))
+        else:
+            print("No other animals that are type '{}' are on record.".format(self.get_animal_type().lower()))
+        input("\nPress enter to continue.\n")
+
+    # retrieve details about the pet's owner including their contact details.
+    def retrieve_owner_info(self):
+        try:
+            print("Owner details:\n\n" + str(owners[self.get_owner_id()]))
+        except:
+            input("Unable to retrieve owner details. Press enter to continue.\n")
+            return
+        input("\nPress enter to continue.\n")
+
+    def __str__(self):
+        return "Name: {}\nAnimal Species: {}\nBreed: {}\nOwner: {}".format(
+            self.get_animal_name(), self.get_animal_type(), self.get_animal_breed(), self.get_owner_name())
+
+
+# double-ended queue class to enforce deque data constraints. It is currently only used for animal class objects
+class deque:
+    def __init__(self, in_list, limit):
+        # determines the number of objects that can be in the deque.
+        self.__deque_limit = limit
+        self.__deque_list = in_list
+
+    # insert class objects at the front of the deque
+    def insert_front(self):
+        # if for some reason this function is used when the deque is full, return an error. Else step through
+        # object creation process.
+        if self.check_full() is True:
+            print("Deque at maximum capacity ({}). Unable to add.".format(self.__deque_limit))
+        else:
+            self.__deque_list.insert(0, animal())
+            self.__deque_list[0].set_animal_name("add")
+            self.__deque_list[0].set_animal_type("add")
+            self.__deque_list[0].set_breed("add")
+            self.__deque_list[0].set_owner("add")
+            if confirm_change(4, 0, "Add", self.__deque_list):
+                pets_changes.append("ADD: {}".format(self.__deque_list[0]))
+            else:
+                del self.__deque_list[0]
+
+    # insert class objects at the back of the deque
+    def insert_back(self):
+        # if for some reason this function is used when the deque is full, return an error. Else step through
+        # object creation process.
+        if self.check_full() is True:
+            print("Deque at maximum capacity ({}). Unable to add.".format(self.__deque_limit))
+        else:
+            self.__deque_list.append(animal())
+            self.__deque_list[-1].set_animal_name("add")
+            self.__deque_list[-1].set_animal_type("add")
+            self.__deque_list[-1].set_breed("add")
+            self.__deque_list[-1].set_owner("add")
+            if confirm_change(4, -1, "Add", self.__deque_list):
+                pets_changes.append("ADD: {}".format(self.__deque_list[-1]))
+            else:
+                del self.__deque_list[-1]
+
+    # remove class objects at the front of the deque
+    def delete_front(self):
+        if confirm_change(4, 0, "Delete", self.__deque_list):
+            pets_changes.append("DELETE: {}".format(self.__deque_list[0]))
+            self.__deque_list.pop(0)
+            input("\nRecord deleted! Press enter to continue.\n")
+
+    # remove class objects at the back of the deque
+    def delete_back(self):
+        if confirm_change(4, -1, "Delete", self.__deque_list):
+            pets_changes.append("DELETE: {}".format(self.__deque_list[-1]))
+            self.__deque_list.pop()
+            input("\nRecord deleted! Press enter to continue.\n")
+
+    # check whether the deque object contains any objects. If Empty return True
+    def check_empty(self):
+        if self.__deque_list:
+            return False
+        else:
+            return True
+
+    # check whether the deque object is full. If full return True
+    def check_full(self):
+        if len(self.__deque_list) >= self.__deque_limit:
+            return True
+        else:
+            return False
+
+    # return a description of the first class object in the deque
+    def return_deque_front(self):
+        return "{} the {}".format(self.__deque_list[0].get_animal_name(), self.__deque_list[0].get_animal_type())
+
+    # return a description of the last class object in the deque
+    def return_deque_back(self):
+        return "{} the {}".format(self.__deque_list[-1].get_animal_name(), self.__deque_list[-1].get_animal_type())
+
+    # return full deque list
+    def return_deque(self):
+        return self.__deque_list
+
+    # provides a visual representation of the deque object
+    def display_deque(self):
+        deque_display = "Operations Deque\n\n"  # string that is returned once the function has completed
+        loaded_patients = []  # initial list of patients pulled from the deque
+        max_length = 0  # gets the length of the largest object in the deque
+        top_dashes = ""  # used for the top of the visual representation of the deque
+        bot_dashes = ""  # used for the bottom of the visual representation of the deque
+        # if deque object is not empty, load in all the patients from the deque. Also find the largest object in
+        # the deque to determine the spacing in the visual representation of the deque
+        if not self.check_empty():
+            for animal_x in self.__deque_list:
+                loaded_patients.append("{} the {}".format(animal_x.get_animal_name(), animal_x.get_animal_type()))
+                if len(loaded_patients[-1]) > max_length:
+                    max_length = len(loaded_patients[-1])
+        # if no objects in the deque, make the spaces in the deque 12 characters wide
+        else:
+            max_length = 12
+        # for loop used to change the position of "Next" and "Last" labels in the top visual part of the deque
+        # also used to create the bottom visual part of the deque
+        for s in range(1, self.__deque_limit + 1):
+            if s == 1:
+                top_dashes += "{}-Next{}-".format(s, ((max_length - 3) - len(str(s))) * "-")
+            elif s == len(loaded_patients):
+                top_dashes += "{}-Last{}-".format(s, ((max_length - 3) - len(str(s))) * "-")
+            else:
+                top_dashes += "{}-{}-".format(s, ((max_length + 1) - len(str(s))) * "-")
+            bot_dashes += "-" * (max_length + 3)
+        # add top visual part of the deque to the returned string
+        deque_display += top_dashes + "\n"
+        # for loops to populate the deque slots. Also used to determine the spacing in the visual representation.
+        for position in range(1, len(loaded_patients) + 1):
+            entry_space = " " + (" " * (max_length - len(loaded_patients[position - 1])))
+            deque_display += "| {}{}".format(loaded_patients[position - 1], entry_space)
+        for position in range(len(loaded_patients) + 1, self.__deque_limit + 1):
+            deque_display += "| {}".format(" " * (max_length + 1))
+        # add bottom visual part of the deque to the returned string
+        deque_display += "|\n" + bot_dashes + "\n"
+        return deque_display
+
+
+deque_limit = 6
+save_file = sys.path[0] + "\\focs_data_file.txt"
+# load lists with records from the save file if it exists.
+vets, nurses, owners, pets, people, last_changes = read_file(save_file)
+if len(pets) > deque_limit:
+    print("! - Warning: The number of animals in the data file exceeds the Operations Deque limit. The following "
+          "animals won't be included or saved:")
+    for oob_pet in pets[deque_limit:]:
+        print("{} the {}".format(oob_pet.get_animal_name(), oob_pet.get_animal_type()))
+    print()
+
+pets = pets[0:deque_limit]
+pets_changes = []
+people_changes = []
+operations = deque(pets, deque_limit)
+
+# Root menu items
+menu_root = ["Veterinarians", "Nurses", "Pet owners",
+             "Animal patients", "Save changes", "Display changes from previous save"]
+menu_operations = ["Add Standard Patient", "Add Emergency Patient", "Clear Next Patient",
+                   "Clear Last Patient"]
+pay_grades = [1000000, 500000, 250000, 100000, 60000, 40000, 0]
+selection_root = -1
+print("Welcome!")
+# while the first input doesn't = 0 (which causes the program to finish), keep navigating through menus.
+while selection_root != 0:
+    if people_changes or pets_changes:
+        menu_root[4] = "Save changes <----- (! unsaved changes)"
+    else:
+        menu_root[4] = "Save changes"
+    selection_root = menu("Main Menu", "Which section would you like to navigate to?", menu_root, "E")
+    if selection_root != 0:
+        selection_action = -1
+        selection_class = -1
+        # sub root menu options. This changes depending on the root menu selection.
+        menu_action = ["View record", "Add record", "Update record", "Search record",
+                       "Delete record"]
+        # selection_root:
+        # 1 = adjust subsequent actions to operate on vet class and objects
+        # 2 = adjust subsequent actions to operate on nurse class and objects
+        # 3 = adjust subsequent actions to operate on owner class and objects
+        # 4 = adjust subsequent actions to operate on owner class and objects
+        # 5 = save changes if there are any
+        # 6 = displays changes of the last save made
+        #
+        # for 1=4:
+        # populate r_list with objects with chosen class type
+        # populate r_class with chosen class
+        # add menu actions only relevant to the chosen class type
+        if selection_root == 1:
+            r_list = vets
+            r_class = veterinarian
+            menu_action.append("Get pay grade")
+            menu_action.append("Get pay comparison")
+            menu_action.append("Check for duplicate records")
+            menu_action.append("Generate system id (for future usage)")
+            menu_action.append("Search records by salary")
+            menu_action.append("Sort records by salary")
+        elif selection_root == 2:
+            r_list = nurses
+            r_class = nurse
+            menu_action.append("Get pay grade")
+            menu_action.append("Get pay details")
+            menu_action.append("Check for duplicate records")
+            menu_action.append("Generate system id (for future usage)")
+        elif selection_root == 3:
+            r_list = owners
+            r_class = owner
+            menu_action.append("Find owner's pets")
+            menu_action.append("Check discount eligibility")
+            menu_action.append("Check for duplicate records")
+            menu_action.append("Generate system id (for future usage)")
+        elif selection_root == 4:
+            r_list = pets
+            r_class = animal
+            menu_action.append("Find matching animals")
+            menu_action.append("Retrieve owner information")
+        elif selection_root == 5:
+            if people_changes or pets_changes:
+                write_file(save_file, vets, nurses, owners, pets, people_changes, pets_changes)
+                # update "last changes" list with the save that just occurred.
+                last_changes = []
+                for x in people_changes:
+                    last_changes.append(x.replace("\n", ", "))
+                for x in pets_changes:
+                    last_changes.append(x.replace("\n", ", "))
+                # reset "current change" lists for any subsequent saves that occur.
+                people_changes = []
+                pets_changes = []
+            else:
+                print("No changes have been made in the system - save aborted.")
+            continue
+        elif selection_root == 6:
+            if last_changes:
+                print("Changes that were made in the last save:")
+                for change in last_changes:
+                    print(change)
+                print()
+            else:
+                print("No record of last save present.")
+            continue
+
+        # if selection_action is 0, the program ends. Input can be changed to "0" via the menu function
+        while selection_action != 0:
+            # if the animal section is chosen, display the operations deque at the top of the screen
+            if selection_root == 4:
+                print(operations.display_deque())
+            # once the user has selected something from the root menu, the sub root menu is presented
+            selection_action = menu(str(menu_root[selection_root - 1]), "What would you like to do?", menu_action)
+            # if selection_action is 0, the user will be taken back to the root menu
+            if selection_action != 0:
+                # if there are no records in the operations deque and a deletion is attempted, throw an error.
+                if selection_action == 5 and selection_root == 4 and operations.check_empty():
+                    print("There are no patients to clear from the Operations Deque.")
+
+                # if there are no records in the class type chosen in the root menu, throw an error. This does not
+                # include adding a new record.
+                elif selection_action != 2 and len(r_list) == 0:
+                    print("There are no records to view, edit or remove.")
+
+                # View Records
+                # choose a record from a selection to view its contents
+                elif selection_action == 1:
+                    selection_class = -1
+                    # if selection_class is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        selection_class = menu(str(menu_action[selection_action - 1]),
+                                               "Which record would you like to view?",
+                                               list_of_names(r_list, selection_root))
+                        if selection_class != 0:
+                            print("Displaying results:\n\n" + str(r_list[selection_class - 1]))
+                            input("\nPress enter to continue.\n")
+                        else:
+                            pass
+
+                # Add Records
+                # used to initialize class object and walk through setters depending on the class type
+                elif selection_action == 2:
+                    # initiate class object and add to list
+                    if selection_root == 4 and operations.check_full():
+                        print("Deque at maximum capacity. Unable to add.")
+                        continue
+                    print("Add Record\n---------------------")
+                    if selection_root in range(1, 4):
+                        r_list.append(r_class())
+                        r_list[-1].set_title("add")
+                        r_list[-1].set_fname("add")
+                        r_list[-1].set_lname("add")
+                    if selection_root == 1:
+                        r_list[-1].set_job_title("add")
+                        r_list[-1].set_salary("add")
+                        r_list[-1].set_qual("add")
+                    if selection_root == 2:
+                        r_list[-1].set_job_title("add")
+                        r_list[-1].set_salary("add")
+                        r_list[-1].set_ward("add")
+                        r_list[-1].set_days_per_week("add")
+                    if selection_root == 3:
+                        r_list[-1].set_insurance_co("add")
+                        r_list[-1].set_insurance_no("add")
+                        r_list[-1].set_phone("add")
+                        r_list[-1].set_email("add")
+                    if selection_root == 4:
+                        yn = ""
+                        # determine whether the incoming animal patient requires emergency attention. If yes,
+                        # put the patient at the front of the Operations queue. Otherwise put the patient at the back.
+                        while yn != 'n' and yn != 'y':
+                            yn = input(str("Is this an emergency patient? Y/N: ")).lower()
+                            if yn == "y":
+                                operations.insert_front()
+                            elif yn == 'n':
+                                operations.insert_back()
+                            else:
+                                print("\nInvalid selection. Please try again.")
+
+                    # if new object is a vet, nurse or owner, add them to the people list
+                    if selection_root in range(1, 4):
+                        if confirm_change(selection_root, -1, "Add", r_list):
+                            people.append(r_list[-1])
+                            people_changes.append("ADD: {}".format(r_list[-1]))
+                            input("\nNew record entered! Press enter to continue.\n")
+                        else:
+                            del r_list[-1]
+
+                # Update Records
+                # update specific attributes of a given class object
+                elif selection_action == 3:
+                    selection_class = -1
+                    # if selection_class is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        selection_class = menu(str(menu_action[selection_action - 1]),
+                                               "Which record would you like to update?",
+                                               list_of_names(r_list, selection_root))
+                        if 0 < selection_class <= len(r_list):
+                            choice = -1
+                            # if choice is 0, the user will be taken back to the previous menu
+                            while choice != 0:
+                                # split up the class object's __str__ by new lines and treat them as
+                                # individual attributes in the next menu
+                                list_of_attr = str(r_list[selection_class - 1]).split("\n")
+                                if selection_root != 4:
+                                    choice = menu(r_list[selection_class - 1].get_fullname(),
+                                                  "Which field would you like to update?",
+                                                  list_of_attr)
+                                else:
+                                    choice = menu(r_list[selection_class - 1].get_animal_name(),
+                                                  "Which field would you like to update?",
+                                                  list_of_attr)
+                                # if choice is 0, the user will be taken back to the previous menu
+                                if 0 < choice <= len(list_of_attr):
+                                    # if class object is an animal, use animal's name in the next title
+                                    # else use person's name.
+                                    if selection_root == 4:
+                                        print("{} - {}\n{}".format(menu_action[selection_action - 1],
+                                                                   r_list[selection_class - 1].get_animal_name(),
+                                                                   "---------------------"))
+                                    else:
+                                        print("{} - {}\n{}".format(menu_action[selection_action - 1],
+                                                                   r_list[selection_class - 1].get_fullname(),
+                                                                   "---------------------"))
+                                    # Update options:
+                                    # selection_root = person & choice = person attribute:
+                                    #                  update person attributes
+                                    if selection_root in range(1, 4) and choice in range(1, 4):
+                                        if choice == 1:
+                                            prev_val = r_list[selection_class - 1].get_title()
+                                            r_list[selection_class - 1].set_title("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_title("revert", prev_val)
+                                        elif choice == 2:
+                                            prev_val = r_list[selection_class - 1].get_fname()
+                                            r_list[selection_class - 1].set_fname("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_fname("revert", prev_val)
+                                        elif choice == 3:
+                                            prev_val = r_list[selection_class - 1].get_lname()
+                                            r_list[selection_class - 1].set_lname("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_lname("revert", prev_val)
+                                        else:
+                                            print("An error has occurred. Please try again later.")
+                                    # selection_root = employee & choice = salary:
+                                    #                  update salary
+                                    elif selection_root in range(1, 3) and choice == 5:
+                                        if choice == 5:
+                                            prev_val = r_list[selection_class - 1].get_salary()
+                                            r_list[selection_class - 1].set_salary("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_salary("revert", prev_val)
+                                        else:
+                                            print("An error has occurred. Please try again later.")
+                                    # selection_root = vet & choice = other vet fields:
+                                    #                  update vet fields
+                                    elif selection_root == 1 and (choice == 4 or choice == 6):
+                                        people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                        if choice == 4:
+                                            prev_val = r_list[selection_class - 1].get_job_title()
+                                            r_list[selection_class - 1].set_job_title("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_job_title("revert", prev_val)
+                                        elif choice == 6:
+                                            prev_val = r_list[selection_class - 1].get_qual()
+                                            r_list[selection_class - 1].set_qual("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_qual("revert", prev_val)
+                                        else:
+                                            print("An error has occurred. Please try again later.")
+                                    # selection_root = nurse & choice = other nurse fields (4 or 6 or 7):
+                                    #                  update nurse fields
+                                    elif selection_root == 2 and (choice == 4 or choice in range(6, 8)):
+                                        people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                        if choice == 4:
+                                            prev_val = r_list[selection_class - 1].get_job_title()
+                                            r_list[selection_class - 1].set_job_title("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_job_title("revert", prev_val)
+                                        elif choice == 6:
+                                            prev_val = r_list[selection_class - 1].get_ward()
+                                            r_list[selection_class - 1].set_ward("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_ward("revert", prev_val)
+                                        elif choice == 7:
+                                            prev_val = r_list[selection_class - 1].get_days_per_week()
+                                            r_list[selection_class - 1].set_days_per_week("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_days_per_week("revert", prev_val)
+                                        else:
+                                            print("An error has occurred. Please try again later.")
+                                    # selection_root = owner & choice = owner fields (4-7):
+                                    #                  update owner fields
+                                    elif selection_root == 3 and choice in range(4, 8):
+                                        people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                        if choice == 4:
+                                            prev_val = r_list[selection_class - 1].get_insurance_co()
+                                            r_list[selection_class - 1].set_insurance_co("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_insurance_co("revert", prev_val)
+                                        elif choice == 5:
+                                            prev_val = r_list[selection_class - 1].get_insurance_no()
+                                            r_list[selection_class - 1].set_insurance_no("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_insurance_no("revert", prev_val)
+                                        elif choice == 6:
+                                            prev_val = r_list[selection_class - 1].get_phone()
+                                            r_list[selection_class - 1].set_phone("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_phone("revert", prev_val)
+                                        elif choice == 7:
+                                            prev_val = r_list[selection_class - 1].get_email()
+                                            r_list[selection_class - 1].set_email("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                people_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_email("revert", prev_val)
+                                        else:
+                                            print("An error has occurred. Please try again later.")
+                                    # selection_root = animal & choice = animal fields (1-4):
+                                    #                  update animal fields
+                                    elif selection_root == 4 and choice in range(1, 5):
+                                        pets_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                        if choice == 1:
+                                            prev_val = r_list[selection_class - 1].get_animal_name()
+                                            r_list[selection_class - 1].set_animal_name("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                pets_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_animal_name("revert", prev_val)
+                                        elif choice == 2:
+                                            prev_val = r_list[selection_class - 1].get_animal_type()
+                                            r_list[selection_class - 1].set_animal_type("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                pets_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_animal_type("revert", prev_val)
+                                        elif choice == 3:
+                                            prev_val = r_list[selection_class - 1].get_animal_breed()
+                                            r_list[selection_class - 1].set_breed("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                pets_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_breed("revert", prev_val)
+                                        elif choice == 4:
+                                            prev_val = r_list[selection_class - 1].get_owner_id()
+                                            r_list[selection_class - 1].set_owner("update")
+                                            if confirm_change(selection_root, selection_class - 1, "Update", r_list):
+                                                pets_changes.append("UPDATE: {}".format(r_list[selection_class - 1]))
+                                                input("\nUpdate successful! Press enter to continue.\n")
+                                            else:
+                                                r_list[selection_class - 1].set_owner("revert", prev_val)
+                                    # 0 = go back to previous menu
+                                    elif choice == 0:
+                                        pass
+                                    else:
+                                        print("An error has occurred. Please try again later.")
+                        elif selection_class == 0:
+                            pass
+                        else:
+                            print("Invalid selection. Please try again.")
+
+                # Search Records
+                # used to find records using search terms depending on the class type
+                elif selection_action == 4:
+                    selection_class = -1
+                    # the user can go back to the previous menu if Enter is pressed
+                    while 1 == 1:
+                        object_strings = []
+                        search_results = []
+                        search_count = 0
+                        search = input(
+                            "Enter a search term to start the search. Press Enter to return to the previous menu: ")\
+                            .lower()
+                        # if Enter is pressed, return to previous menu
+                        if search == "":
+                            break
+                        else:
+                            # for all objects in the class list, do the following:
+                            # 1.) split the output of __str__ by newlines into "lines" and make them all lowercase.
+                            # 2.) for each line, remove the field names only leaving behind the raw data.
+                            # 3.) get the data of each line, remove any $'s and remove spaces.
+                            # 4.) add lines to "object_strings" list. Each line will look like this:
+                            # davidbrownnurse1400003fotherdetails <--- this is so the search can match only on the
+                            # data that is collected, not field names, spaces, dollar signs, etc.
+                            for class_object in r_list:
+                                object_breakdown = ""
+                                lines = str(class_object).lower().split("\n")
+                                for line in lines:
+                                    data = line.split(":")
+                                    object_breakdown += data[1].replace("$", "").replace(" ", "")
+                                object_strings.append(object_breakdown)
+                            # if a string is matched with the search term inputted, retrieve the corresponding
+                            # class object record
+                            for string in object_strings:
+                                if search in string:
+                                    search_results.append(str(r_list[object_strings.index(string)]))
+                            if len(search_results) != 0:
+                                print("\nSee below results:\n")
+                                for result in search_results:
+                                    print(str(result) + "\n")
+                            else:
+                                print("\nNo results were found.\n")
+
+                # Delete Records
+                # delete records of the chosen class type
+                elif selection_action == 5:
+                    # if attempting to delete a people record, follow normal process. Else use new deletion
+                    # functionality for animal patients
+                    if selection_root in range(1, 4):
+                        selection_class = -1
+                        selection_class = menu("Delete Record", "Which record would you like to delete?",
+                                               list_of_names(r_list, selection_root))
+                        # if choice is 0, the user will be taken back to the previous menu
+                        if 0 < selection_class <= len(r_list):
+                            if confirm_change(selection_root, selection_class - 1, "Delete", r_list):
+                                if selection_root == 3:
+                                    r_list[selection_class - 1].find_pets("delete")
+                                people_changes.append("DELETE: {}".format(r_list[selection_class - 1]))
+                                del r_list[selection_class - 1]
+                                input("\nRecord deleted! Press enter to continue.\n")
+                        else:
+                            print("Invalid selection. Please try again.")
+                    # new delete function for deque
+                    else:
+                        selection_class = menu("Clear Patient", "Which patient would you like to clear?",
+                                               ["Next Patient", "Last Patient"])
+                        if 0 < selection_class <= 2:
+                            if selection_class == 1:
+                                operations.delete_front()
+                            elif selection_class == 2:
+                                operations.delete_back()
+                        else:
+                            print("Invalid selection. Please try again.")
+
+                # Class-specific functions (at 6th menu option)
+                # different functions that can be performed that are specific to the chosen class type
+                elif selection_action == 6:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # Vet and nurse classes have access "pay_grade"
+                        selection_class = -1
+                        if selection_root in range(1, 3):
+                            selection_class = menu("Employee Pay Grade", "Which record would you like to choose?",
+                                                   list_of_names(r_list, selection_root))
+                            # if choice is 0, the user will be taken back to the previous menu
+                            if selection_class != 0:
+                                r_list[selection_class - 1].pay_grade()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        # Owner class has access to "find_pets"
+                        if selection_root == 3:
+                            selection_class = menu("Find owner's pets", "Which record would you like to choose?",
+                                                   list_of_names(r_list, selection_root))
+                            if selection_class != 0:
+                                r_list[selection_class - 1].find_pets("find")
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        # Animal class has access to "same_animal_type"
+                        if selection_root == 4:
+                            selection_class = menu("Find matching animals", "Which record would you like to check?",
+                                                   list_of_names(r_list, selection_root))
+                            if selection_class != 0:
+                                r_list[selection_class - 1].same_animal_type()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+
+                # Class-specific functions (at 7th menu option)
+                # different functions that can be performed that are specific to the chosen class type
+                elif selection_action == 7:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # Vet class has access to "pay_comparison"
+                        selection_class = -1
+                        if selection_root == 1:
+                            selection_class = menu("Veterinarian Pay Comparison",
+                                                   "Which record would you like to choose?",
+                                                   list_of_names(r_list, selection_root))
+                            # if choice is 0, the user will be taken back to the previous menu
+                            if selection_class != 0:
+                                r_list[selection_class - 1].pay_comparison()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        # Nurse class has access to "pay_details"
+                        if selection_root == 2:
+                            selection_class = menu("Employee Pay Details", "Which record would you like to choose?",
+                                                   list_of_names(r_list, selection_root))
+                            if selection_class != 0:
+                                r_list[selection_class - 1].pay_details()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        # Owner class has access to "bupa_discount"
+                        if selection_root == 3:
+                            selection_class = menu("Discount Eligibility", "Which record would you like to check?",
+                                                   list_of_names(r_list, selection_root))
+                            if selection_class != 0:
+                                r_list[selection_class - 1].bupa_discount()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        # Animal class has access to "retrieve_owner_info"
+                        if selection_root == 4:
+                            selection_class = menu("Retrieve owner information",
+                                                   "Which record would you like to choose?",
+                                                   list_of_names(r_list, selection_root))
+                            if selection_class != 0:
+                                r_list[selection_class - 1].retrieve_owner_info()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+
+                # Class-specific functions (at 8th menu option)
+                # different functions that can be performed that are specific to the chosen class type
+                elif selection_action == 8:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # available for vets, nurses and owners
+                        selection_class = -1
+                        if selection_root in range(1, 4):
+                            selection_class = menu("Check for duplicate records",
+                                                   "Which record would you like to check?",
+                                                   list_of_names(r_list, selection_root))
+                            # if choice is 0, the user will be taken back to the previous menu
+                            if selection_class != 0:
+                                r_list[selection_class - 1].check_for_duplicate()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        else:
+                            print("Invalid selection. Please try again.")
+
+                # People specific function (generate_sysid) (at 9th menu option)
+                elif selection_action == 9:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # available for vets, nurses and owners
+                        selection_class = -1
+                        if selection_root in range(1, 4):
+                            selection_class = menu("Generate system id (for future usage)",
+                                                   "Which record would you like to generate an id for?",
+                                                   list_of_names(r_list, selection_root))
+                            # if choice is 0, the user will be taken back to the previous menu
+                            if selection_class != 0:
+                                r_list[selection_class - 1].generate_sysid()
+                            elif selection_class == 0:
+                                pass
+                            else:
+                                print("Invalid selection. Please try again.")
+                        else:
+                            print("Invalid selection. Please try again.")
+                # Vet specific function (search salary functions) (at 10th menu option)
+                elif selection_action == 10:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # available for vets
+                        selection_class = -1
+                        if selection_root == 1:
+                            selection_class = menu("Search records by salary",
+                                                   "Which search algorithm would you like to use?",
+                                                   ["Linear", "Sorted Linear", "Binary"])
+                            # if choice is 0, the user will be taken back to the previous menu
+                            while selection_class != 0:
+                                if selection_class in range(1, 4):
+                                    search = input("Enter a salary to start the search. "
+                                                   "Press Enter to return to the previous menu: ")
+                                    # if Enter is pressed, return to previous menu
+                                    if search == "":
+                                        break
+                                    try:
+                                        search = float(search)
+                                    except:
+                                        print("Incorrect input. Please input a salary value, e.g. 100000.00")
+                                        continue
+                                    # section determines which search algorithm is used.
+                                    if selection_class == 1:
+                                        search_status = search_linear(r_list, search)
+                                    elif selection_class == 2:
+                                        search_status = search_linear(r_list, search, "y")
+                                    else:
+                                        search_status = search_binary(r_list, search)
+                                    if search_status:
+                                        print("{} - Result(s) found.\n".format(search_status))
+                                    else:
+                                        print("{} - No results found.\n".format(search_status))
+                                elif selection_class == 0:
+                                    pass
+                                else:
+                                    print("Invalid selection. Please try again.")
+                        else:
+                            print("Invalid selection. Please try again.")
+                # Vet specific function (sort salary functions) (at 11th menu option)
+                elif selection_action == 11:
+                    selection_class = -1
+                    # if choice is 0, the user will be taken back to the previous menu
+                    while selection_class != 0:
+                        # available for vets
+                        selection_class = -1
+                        if selection_root == 1:
+                            selection_class = menu("Sort records by salary",
+                                                   "Which sort algorithm would you like to use?",
+                                                   ["Insertion", "Selection", "Bubble", "Heap"])
+                            # if choice is 0, the user will be taken back to the previous menu
+                            if selection_class in range(1, 5):
+                                tmp_list = []
+                                for obj in r_list:
+                                    tmp_list.append(obj)
+                                # section determines which sort algorithm is used.
+                                if selection_class == 1:
+                                    vets = sort_insertion(r_list, "y")
+                                elif selection_class == 2:
+                                    vets = sort_selection(r_list, "y")
+                                elif selection_class == 3:
+                                    vets = sort_bubble(r_list, "y")
+                                elif selection_class == 4:
+                                    vets = sort_heap(r_list, "y")
+                                sort_before_after(tmp_list, r_list)
+                                r_list = vets
+                                people = vets + nurses + owners
+                        else:
+                            print("Invalid selection. Please try again.")
+                elif selection_action == 0:
+                    pass
+                else:
+                    print("Invalid selection. Please try again.")
+    else:
+        # when the program is exited, do a check to see whether any changes were unsaved. Provide the user the option
+        # of whether they want to save any changes.
+        if people_changes or pets_changes:
+            yn = ""
+            while yn.lower() != 'n' and yn.lower() != 'y':
+                print("You have unsaved changes! Would you like to save the following changes before exiting? Y/N\n")
+                for change in people_changes:
+                    print(change.replace("\n", ", "))
+                for change in pets_changes:
+                    print(change.replace("\n", ", "))
+                yn = input()
+                if yn.lower() == 'y':
+                    write_file(save_file, vets, nurses, owners, pets, people_changes, pets_changes)
+                elif yn.lower() == 'n':
+                    pass
+                else:
+                    print("\nInvalid selection. Please try again.")
+        print("Thank you for using this program. Goodbye!")
